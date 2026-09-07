@@ -459,7 +459,7 @@ if __name__ == "__main__":
                 print("  [00:05.50] Dong loi 2")
                 print("Dung --create-lrc de tao file mau")
 
-    # Mặc định: Menu lua chon bai hat
+    # Mặc định: Menu lua chon bai hat - VONG LAP de nghe bai khac
     else:
         # Tim tat ca bai hat co san
         def get_available_songs():
@@ -470,78 +470,105 @@ if __name__ == "__main__":
             songs = sorted(set(songs))
             return songs
 
-        songs = get_available_songs()
-        # Them 2 demo Beep vao menu
-        has_songs = len(songs) > 0
+        # Vong lap chinh de chon va nghe lien tuc
+        while True:
+            songs = get_available_songs()
+            has_songs = len(songs) > 0
 
-        # Neu co nhieu bai hoac muon chon -> hien menu
-        if has_songs:
-            print(f"{Fore.CYAN}{Style.BRIGHT}=== LUA CHON BAI HAT ==={Style.RESET_ALL}")
-            for i, s in enumerate(songs, 1):
-                base = os.path.basename(s)
-                has_lrc = os.path.exists(os.path.splitext(s)[0]+".lrc")
-                tag = f"{Fore.GREEN}co loi{Fore.WHITE}" if has_lrc else f"{Fore.YELLOW}khong loi{Fore.WHITE}"
-                print(f"  {Fore.YELLOW}{i}.{Fore.WHITE} {base} [{tag}]")
-            print(f"  {Fore.MAGENTA}{len(songs)+1}. Happy Birthday (demo Beep){Fore.WHITE}")
-            print(f"  {Fore.MAGENTA}{len(songs)+2}. Twinkle Twinkle (demo Beep){Fore.WHITE}")
-            print(f"  {Fore.CYAN}0. Thoat{Fore.WHITE}")
-            try:
-                choice = input(f"\n{Fore.CYAN}Nhap so (1-{len(songs)+2}): {Style.RESET_ALL}").strip()
-                if not choice.isdigit():
-                    print("Thoat.")
-                    choice = "0"
-                choice = int(choice)
-            except (KeyboardInterrupt, EOFError):
-                print("\nThoat.")
-                choice = 0
+            # Neu co nhieu bai -> hien menu
+            if has_songs:
+                print(f"\n{Fore.CYAN}{Style.BRIGHT}=== LUA CHON BAI HAT (vong lap) ==={Style.RESET_ALL}")
+                for i, s in enumerate(songs, 1):
+                    base = os.path.basename(s)
+                    has_lrc = os.path.exists(os.path.splitext(s)[0]+".lrc")
+                    tag = f"{Fore.GREEN}co loi{Fore.WHITE}" if has_lrc else f"{Fore.YELLOW}khong loi{Fore.WHITE}"
+                    print(f"  {Fore.YELLOW}{i}.{Fore.WHITE} {base} [{tag}]")
+                print(f"  {Fore.MAGENTA}{len(songs)+1}. Happy Birthday (demo Beep){Fore.WHITE}")
+                print(f"  {Fore.MAGENTA}{len(songs)+2}. Twinkle Twinkle (demo Beep){Fore.WHITE}")
+                print(f"  {Fore.CYAN}{len(songs)+3}. Phat tat ca (playlist loop){Fore.WHITE}")
+                print(f"  {Fore.CYAN}0. Thoat{Fore.WHITE}")
+                try:
+                    choice = input(f"\n{Fore.CYAN}Nhap so (1-{len(songs)+3}, 0 thoat): {Style.RESET_ALL}").strip()
+                    if not choice.isdigit():
+                        print("Thoat.")
+                        break
+                    choice = int(choice)
+                except (KeyboardInterrupt, EOFError):
+                    print("\nThoat.")
+                    break
 
-            if choice == 0:
-                print("Tam biet!")
-            elif 1 <= choice <= len(songs):
-                sel = songs[choice-1]
-                guess = os.path.splitext(sel)[0]+".lrc"
-                if os.path.exists(guess):
-                    play_with_lrc(sel, guess)
-                else:
-                    if HAS_PYGAME:
-                        if not pygame.mixer.get_init():
-                            try:
-                                pygame.mixer.init()
-                            except Exception as e:
-                                print(f"[Loi] mixer init that bai: {e}")
-                                sys.exit(1)
-                        try:
-                            pygame.mixer.music.load(sel)
-                            pygame.mixer.music.play()
-                        except Exception as e:
-                            print(f"[Loi] Khong the phat {sel}: {e}")
-                            sys.exit(1)
-                        print(f"Dang phat (khong loi): {sel}")
-                        print(f"Tao file {guess} de co loi dong bo")
-                        try:
-                            while pygame.mixer.music.get_busy():
-                                time.sleep(0.1)
-                        except KeyboardInterrupt:
-                            pygame.mixer.music.stop()
-                            print("\nDa dung.")
-                        print("Phat xong!")
+                if choice == 0:
+                    print("Tam biet!")
+                    break
+                elif 1 <= choice <= len(songs):
+                    sel = songs[choice-1]
+                    guess = os.path.splitext(sel)[0]+".lrc"
+                    if os.path.exists(guess):
+                        play_with_lrc(sel, guess)
                     else:
-                        print("Can pygame de phat mp3/wav: pip install pygame")
-            elif choice == len(songs)+1:
-                play_melody_with_lyrics(DEMO_SONG, title="Happy Birthday - Demo Karaoke")
-            elif choice == len(songs)+2:
-                play_melody_with_lyrics(DEMO_TWINKLE, title="Lap Lanh Sao - Twinkle Twinkle")
+                        if HAS_PYGAME:
+                            if not pygame.mixer.get_init():
+                                try:
+                                    pygame.mixer.init()
+                                except Exception as e:
+                                    print(f"[Loi] mixer init that bai: {e}")
+                                    continue
+                            try:
+                                pygame.mixer.music.load(sel)
+                                pygame.mixer.music.play()
+                            except Exception as e:
+                                print(f"[Loi] Khong the phat {sel}: {e}")
+                                continue
+                            print(f"Dang phat (khong loi): {sel}")
+                            print(f"Tao file {guess} de co loi dong bo")
+                            try:
+                                while pygame.mixer.music.get_busy():
+                                    time.sleep(0.1)
+                            except KeyboardInterrupt:
+                                pygame.mixer.music.stop()
+                                print("\nDa dung.")
+                            print("Phat xong!")
+                        else:
+                            print("Can pygame de phat mp3/wav: pip install pygame")
+                elif choice == len(songs)+1:
+                    play_melody_with_lyrics(DEMO_SONG, title="Happy Birthday - Demo Karaoke")
+                elif choice == len(songs)+2:
+                    play_melody_with_lyrics(DEMO_TWINKLE, title="Lap Lanh Sao - Twinkle Twinkle")
+                elif choice == len(songs)+3:
+                    print(f"{Fore.CYAN}Phat playlist loop {len(songs)} bai... Ctrl+C de dung{Fore.WHITE}")
+                    try:
+                        while True:
+                            for s in songs:
+                                guess = os.path.splitext(s)[0]+".lrc"
+                                if os.path.exists(guess):
+                                    play_with_lrc(s, guess)
+                                else:
+                                    if HAS_PYGAME:
+                                        if not pygame.mixer.get_init():
+                                            pygame.mixer.init()
+                                        pygame.mixer.music.load(s)
+                                        pygame.mixer.music.play()
+                                        while pygame.mixer.music.get_busy():
+                                            time.sleep(0.1)
+                                time.sleep(0.5)
+                    except KeyboardInterrupt:
+                        if HAS_PYGAME and pygame.mixer.get_init():
+                            pygame.mixer.music.stop()
+                        print(f"\n{Fore.YELLOW}Da dung playlist.")
+                else:
+                    print("Lua chon khong hop le.")
+                # Sau khi phat 1 bai, quay lai menu
+                print(f"{Fore.CYAN}--- Quay lai menu chon bai khac ---\n{Fore.WHITE}")
             else:
-                print("Lua chon khong hop le.")
-        else:
-            # Khong co file nhac nao -> chay demo
-            if not HAS_WINSOUND and not HAS_PYGAME:
-                print("Canh bao: Khong co winsound/pygame, chi chay gia lap (sleep) + hien thi loi")
-                print("Cai pygame de co am thanh: pip install pygame\n")
-            if args.demo == "twinkle":
-                play_melody_with_lyrics(DEMO_TWINKLE, title="Lap Lanh Sao - Twinkle Twinkle")
-            else:
-                play_melody_with_lyrics(DEMO_SONG, title="Happy Birthday - Demo Karaoke")
+                # Khong co file nhac nao -> chay demo roi thoat loop
+                if not HAS_WINSOUND and not HAS_PYGAME:
+                    print("Canh bao: Khong co winsound/pygame, chi chay gia lap (sleep) + hien thi loi")
+                    print("Cai pygame de co am thanh: pip install pygame\n")
+                if args.demo == "twinkle":
+                    play_melody_with_lyrics(DEMO_TWINKLE, title="Lap Lanh Sao - Twinkle Twinkle")
+                else:
+                    play_melody_with_lyrics(DEMO_SONG, title="Happy Birthday - Demo Karaoke")
+                break
 
     # Hướng dẫn sử dụng in cuối
     if not args.audio:
