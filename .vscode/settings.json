@@ -1,0 +1,14 @@
+{
+    "code-runner.executorMap": {
+        "python": "python -u \"$fullFileName\""
+    },
+    "code-runner.clearPreviousOutput": true,
+    "code-runner.saveFileBeforeRun": true,
+    "python.defaultInterpreterPath": "C:\\Users\\ADMIN\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "python.analysis.extraPaths": [
+        "C:\\Users\\ADMIN\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages"
+    ],
+    "python.analysis.diagnosticMode": "workspace",
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
+}

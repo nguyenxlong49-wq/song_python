@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+karaoke_output.txt
+karaoke_err.txt
