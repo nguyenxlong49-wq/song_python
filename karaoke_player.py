@@ -46,7 +46,7 @@ except ImportError:
         RED = YELLOW = GREEN = CYAN = BLUE = MAGENTA = WHITE = ""
         LIGHTRED_EX = LIGHTYELLOW_EX = LIGHTGREEN_EX = LIGHTCYAN_EX = LIGHTBLUE_EX = LIGHTMAGENTA_EX = ""
     class Style:
-        BRIGHT = RESET_ALL = ""
+        BRIGHT = RESET_ALL = DIM = ""
 
 # 7 sac cau vong
 RAINBOW_COLORS = []
@@ -92,6 +92,73 @@ def wave_rainbow_text(text, phase=0):
             mid += styled
             bot += " "
     return [top, mid, bot]
+
+# 3. Hieu ung karaoke gradient + glow
+def karaoke_gradient_text(text, progress):
+    """To mau dan tu trai sang phai theo progress 0..1, chuyen mau muot, co glow"""
+    if not text:
+        return ""
+    n = len(text)
+    filled = int(n * max(0, min(1, progress)))
+    res = ""
+    for i,ch in enumerate(text):
+        if i < filled:
+            # Da hat: mau sang + gradient theo vi tri
+            col = RAINBOW_COLORS[i % len(RAINBOW_COLORS)] if HAS_COLORAMA and RAINBOW_COLORS[0] else ""
+            res += f"{col}{Style.BRIGHT}{ch}{Style.RESET_ALL}"
+        elif i == filled and 0 < progress < 1:
+            # Bien gradient muot: mau trung gian sang hon
+            res += f"{Fore.YELLOW}{Style.BRIGHT}{ch}{Style.RESET_ALL}" if HAS_COLORAMA else ch
+        else:
+            # Chua hat: mo
+            res += f"{Fore.WHITE}{ch}" if HAS_COLORAMA else ch
+    # Glow nhe: them 1 dong mo duoi
+    return res
+
+def render_waveform(elapsed, width=42, height=3):
+    """4+9. Waveform realtime mo phong (vi pygame.mixer khong cho FFT realtime)
+    Tra ve chuoi waveform dang ▂▅█▆▃ voi gradient + glow, chuyen dong lien tuc theo beat
+    Giai thich: pygame.mixer.music khong expose raw audio buffer, nen dung mo phong
+    sin + random theo beat (BPM ~128) de tranh lag GUI, van dong bo cam giac nhac
+    """
+    import random
+    bars = []
+    # Beat ~0.47s (128 BPM), amplitude nhap nhay theo nhac
+    beat_phase = elapsed * 2.7
+    for i in range(width):
+        # Tong hop 2 sin de tao song phuc tap + random nhe
+        base = math.sin(i*0.6 + beat_phase) * 0.6 + math.sin(i*1.2 - beat_phase*0.7) * 0.4
+        amp = (base + 1) / 2  # 0..1
+        # Them chut random de song dong
+        amp = max(0, min(1, amp + random.uniform(-0.08, 0.08)))
+        # Chon ky tu theo amplitude
+        if amp < 0.2:
+            ch = "▂"
+        elif amp < 0.4:
+            ch = "▃"
+        elif amp < 0.6:
+            ch = "▅"
+        elif amp < 0.8:
+            ch = "▆"
+        else:
+            ch = "█"
+        # Gradient mau theo vi tri + amplitude
+        if HAS_COLORAMA:
+            if amp > 0.7:
+                col = Fore.MAGENTA
+            elif amp > 0.5:
+                col = Fore.CYAN
+            elif amp > 0.3:
+                col = Fore.GREEN
+            else:
+                col = Fore.BLUE
+            # Glow nhe: them BRIGHT khi cao
+            style = Style.BRIGHT if amp > 0.6 else ""
+            bars.append(f"{col}{style}{ch}{Style.RESET_ALL}")
+        else:
+            bars.append(ch)
+    # Glow them 1 dong mo ben duoi
+    return "".join(bars)
 
 # ================== CẤU HÌNH FILE NHẠC CỦA BẠN ==================
 # Đổi 2 dòng này thành tên file mp3 + lrc của bạn (đặt cùng thư mục karaoke_player.py)
@@ -348,49 +415,98 @@ def play_with_lrc(audio_path, lrc_path):
 
     start = time.time()
     idx = 0
-    # In trước 2 dòng ngữ cảnh
+    # Tim lyric hien tai dua tren elapsed
     try:
         while pygame.mixer.music.get_busy() or idx < len(lyrics):
             elapsed = time.time() - start
-            # Hiển thị dòng hiện tại khi đến thời gian - UON SONG 7 SAC
-            while idx < len(lyrics) and elapsed >= lyrics[idx][0]:
-                # Tinh thoi gian toi lyric tiep theo de gioi han animation
-                next_t = lyrics[idx+1][0] if idx+1 < len(lyrics) else elapsed + 1.5
-                wave_dur = min(1.4, max(0.7, next_t - elapsed - 0.3))
-                frames = max(4, int(wave_dur / 0.14))
-                for f in range(frames):
-                    # Cho phep ngat som neu lyric tiep theo da toi
-                    if f>0 and (time.time() - start) >= next_t - 0.1:
-                        break
-                    clear_screen()
-                    print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed+ f*0.14:05.2f}s] {Fore.CYAN}♪ uon song{Fore.WHITE}\n")
-                    if idx > 0:
-                        print(f"  {Fore.WHITE}{lyrics[idx-1][1]}")
-                    # Uon song mau, chu trang: chu giu trang, song ~ 7 sac chay
-                    phase = f * 0.9
-                    indent = int(4 + 4*math.sin(phase))
-                    print(f"{Fore.WHITE}{Style.BRIGHT}▶ {' ' * indent}{lyrics[idx][1]}{Style.RESET_ALL}")
-                    # Song uon 7 sac chay duoi chu
-                    wave_chars = "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])))
-                    # Cat bot khoang trang dau/cuoi cho gon
-                    wave_line = " " * (indent+2) + rainbow_text(wave_chars, offset=int(phase*3))
-                    print(f"  {wave_line}")
-                    if idx + 1 < len(lyrics):
-                        print(f"  {Fore.WHITE}{lyrics[idx+1][1]}")
-                    print(f"\n{Fore.CYAN}{'-'*40}")
-                    time.sleep(0.14)
+            # Cap nhat idx: tang khi qua moc tiep theo
+            while idx + 1 < len(lyrics) and elapsed >= lyrics[idx+1][0]:
                 idx += 1
-                # Cap nhat elapsed sau animation
-                elapsed = time.time() - start
+            # Truong hop chua toi lyric dau
+            if idx == 0 and elapsed < lyrics[0][0]:
+                # Hien waveform cho intro
+                clear_screen()
+                print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed:05.2f}s]{Fore.WHITE}\n")
+                # 3+9. Waveform realtime mo phong
+                wf = render_waveform(elapsed, width=42)
+                print(f"{Fore.CYAN}Waveform:{Fore.WHITE} {wf}")
+                print(f"{Fore.WHITE}♪ Intro...{Style.RESET_ALL}\n")
+                if len(lyrics) > 0:
+                    print(f"  {Fore.WHITE}{lyrics[0][1]}")
+                print(f"\n{Fore.CYAN}{'-'*40}")
+                time.sleep(0.08)
+                continue
 
-            if idx >= len(lyrics) and not pygame.mixer.music.get_busy():
+            # Dam bao idx khong vuot qua
+            if idx >= len(lyrics):
+                if not pygame.mixer.music.get_busy():
+                    break
+                time.sleep(0.08)
+                continue
+
+            # Tinh progress cho hieu ung karaoke gradient 3.
+            cur_t = lyrics[idx][0]
+            next_t = lyrics[idx+1][0] if idx+1 < len(lyrics) else cur_t + 3.0
+            # Neu elapsed chua toi cur_t (do offset), progress =0
+            if elapsed < cur_t:
+                progress = 0
+            else:
+                progress = (elapsed - cur_t) / (next_t - cur_t) if next_t > cur_t else 1
+                progress = max(0, min(1, progress))
+
+            # Render 1 frame
+            clear_screen()
+            print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed:05.2f}s]{Fore.WHITE}\n")
+            # 4+9. Waveform realtime phia tren lyrics - gradient + glow, chay lien tuc
+            wf = render_waveform(elapsed, width=42)
+            # Them glow nhe bang cach in them 1 dong mo
+            print(f"{Fore.CYAN}Waveform:{Fore.WHITE} {wf}")
+            # Glow them dong duoi mo hon
+            wf2 = render_waveform(elapsed+0.3, width=42)
+            print(f"         {Fore.WHITE}{Style.DIM}{wf2}{Style.RESET_ALL}\n")
+
+            # Cau truoc -> tro lai trang thai binh thuong (trang mo)
+            if idx > 0:
+                print(f"  {Fore.WHITE}{Style.DIM}{lyrics[idx-1][1]}{Style.RESET_ALL}")
+
+            # 3. Hieu ung karaoke gradient + glow cho cau hien tai
+            # Mau chay trai sang phai theo progress, chuyen mau muot, co glow
+            grad_text = karaoke_gradient_text(lyrics[idx][1], progress)
+            # Them glow: in them 1 dong duoi mo hon
+            print(f"▶ {grad_text}")
+            # Glow nhe quanh chu: in them dong duoi voi mau mo
+            glow_line = "  " + "".join("·" if i < len(lyrics[idx][1])*progress else " " for i in range(len(lyrics[idx][1])))
+            if HAS_COLORAMA:
+                print(f"  {Fore.MAGENTA}{Style.DIM}{glow_line}{Style.RESET_ALL}")
+            # Uon song mau duoi cau hien tai (giu lai hieu ung cu)
+            phase = elapsed * 3
+            indent = int(2 + 2*math.sin(phase))
+            wave_chars = "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])//2))
+            wave_line = " " * (indent+2) + rainbow_text(wave_chars, offset=int(phase*2))
+            print(f"  {wave_line}")
+
+            # Cau tiep theo mo
+            if idx + 1 < len(lyrics):
+                print(f"  {Fore.WHITE}{Style.DIM}{lyrics[idx+1][1]}{Style.RESET_ALL}")
+
+            print(f"\n{Fore.CYAN}{'-'*40} {Fore.WHITE}progress {int(progress*100)}%{Fore.CYAN} - {'mo phong' if True else 'realtime FFT'}")
+            # Giai thich: pygame.mixer khong expose raw audio nen dung mo phong sin+beat, neu co FFT that se thay the render_waveform bang phan tich that
+
+            time.sleep(0.08)
+            # Thoat khi het nhac va het loi
+            if idx >= len(lyrics)-1 and elapsed > lyrics[-1][0] + 3 and not pygame.mixer.music.get_busy():
                 break
-            time.sleep(0.05)
     except KeyboardInterrupt:
-        pygame.mixer.music.stop()
+        try:
+            pygame.mixer.music.stop()
+        except:
+            pass
         print(f"\n{Fore.YELLOW}Đã dừng (Ctrl+C).")
 
     print(f"\n{Fore.GREEN}✓ Phát xong!")
+    # Ghi chu mo phong vs realtime
+    print(f"{Fore.CYAN}Note: Waveform hien tai la mo phong (sin+beat) vi pygame.mixer khong cho FFT realtime.")
+    print(f"De co FFT that, thay render_waveform() bang phan tich numpy.fft tu audio buffer (can doc file wav truc tiep).{Style.RESET_ALL}")
 
 def create_sample_lrc(path="sample.lrc"):
     """Tạo file LRC mẫu để test chế độ 1"""
