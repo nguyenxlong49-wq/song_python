@@ -478,12 +478,6 @@ def play_with_lrc(audio_path, lrc_path):
             glow_line = "  " + "".join("·" if i < len(lyrics[idx][1])*progress else " " for i in range(len(lyrics[idx][1])))
             if HAS_COLORAMA:
                 print(f"  {Fore.MAGENTA}{Style.DIM}{glow_line}{Style.RESET_ALL}")
-            # Uon song mau duoi cau hien tai (giu lai hieu ung cu)
-            phase = elapsed * 3
-            indent = int(2 + 2*math.sin(phase))
-            wave_chars = "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])//2))
-            wave_line = " " * (indent+2) + rainbow_text(wave_chars, offset=int(phase*2))
-            print(f"  {wave_line}")
 
             # Cau tiep theo mo
             if idx + 1 < len(lyrics):
@@ -548,12 +542,7 @@ def play_melody_with_lyrics(song_data, title="Demo"):
             progress = f"[{i+1}/{len(song_data)}]"
 
             if HAS_COLORAMA:
-                # Demo: chu trang, song duoi 7 sac
-                indent = int(3 + 3*math.sin(i*0.9))
-                wave_chars = "~" * max(1, len(lyric_display)//3)
-                wave_line = rainbow_text(wave_chars, offset=i)
-                print(f"{Fore.YELLOW}{progress} {Fore.WHITE}{Style.BRIGHT}▶ {' ' * indent}{lyric_display}{Style.RESET_ALL} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
-                print(f"       {' ' * indent}{wave_line}")
+                print(f"{Fore.YELLOW}{progress} {Fore.WHITE}{Style.BRIGHT}▶ {lyric_display}{Style.RESET_ALL} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
             else:
                 print(f"{progress} ▶ {lyric_display} ({note} {duration}ms)")
 
