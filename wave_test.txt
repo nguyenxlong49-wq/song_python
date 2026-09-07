@@ -1,0 +1,197 @@
+pygame-ce 2.5.8 (SDL 2.32.10, Python 3.14.7)
+[Can chinh] love-me-again.mp3 OFFSET = -3.60s (clamp >=0)
+Đang phát: assets/music/love-me-again.mp3
+Lời từ: assets/music/love-me-again.lrc
+
+♪ Đang phát: love-me-again.mp3 [00.00s]
+
+Waveform: ▅██▆▅▅▅▅▃▂▃▆█▆▅▅▅▅▃▂▃▅██▆▅▅▅▅▃▂▃▆██▅▅▅▅▃▂▂
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.12s]
+
+Waveform: ▅██▆▃▃▅▃▃▂▃██▆▅▅▃▅▃▃▃▆██▆▅▃▅▃▃▃▅▆█▆▅▃▃▃▃▃▂
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.23s]
+
+Waveform: ▆██▆▃▃▃▅▃▃▅▆██▅▃▃▃▅▃▃▆██▆▃▃▃▃▃▃▅███▅▃▃▃▃▃▃
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.32s]
+
+Waveform: ▅██▆▃▂▃▅▅▅▅▆██▅▂▂▃▅▅▃▆██▆▃▂▃▅▃▅▅███▃▂▂▃▃▃▃
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.42s]
+
+Waveform: ▆██▆▃▂▂▅▅▅▅▆█▆▃▂▂▃▅▅▅▆██▆▃▂▃▅▅▅▅▆█▆▅▂▂▃▅▅▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.52s]
+
+Waveform: ▆▆▆▅▃▂▂▅▆▅▅▆█▆▃▂▂▃▆▅▅▆▆█▅▂▂▂▅▆▆▆▆█▆▃▂▂▃▆▆▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.62s]
+
+Waveform: ▆▆▆▅▂▂▂▅▆▆▅▆▆▆▃▂▂▃▆▆▆▅▆▆▅▂▂▃▆▆▆▅▆▆▅▃▂▂▅▆▆▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.72s]
+
+Waveform: ▅▆▆▅▃▂▂▅█▆▆▆▆▅▃▂▂▅▆█▆▆▆▆▅▂▂▂▆▆▆▅▆▆▆▃▂▂▃█▆▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.81s]
+
+Waveform: ▅▅▆▃▂▂▃▆██▅▅▅▅▃▂▂▅██▆▅▅▅▃▂▂▃▆█▆▆▅▅▅▃▂▂▅▆█▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [00.92s]
+
+Waveform: ▅▅▅▅▂▂▃▆██▆▃▅▅▃▂▂▅██▆▅▅▅▅▂▂▃▆██▆▃▅▅▃▂▂▅██▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.01s]
+
+Waveform: ▅▃▃▅▃▂▅▆██▅▅▃▅▃▃▂▅██▆▅▃▃▃▃▂▃▆██▆▃▃▃▃▃▃▅██▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.11s]
+
+Waveform: ▃▃▃▅▃▃▅▆██▆▃▃▅▃▃▃▆██▆▅▂▃▃▃▃▅▆█▆▅▃▃▃▃▃▃▅██▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.21s]
+
+Waveform: ▃▂▂▅▃▅▅▆█▆▅▂▃▃▅▅▃▅██▆▃▂▃▃▅▅▅▆██▃▂▂▃▃▃▃▆██▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.31s]
+
+Waveform: ▃▂▃▃▅▅▅▆██▅▂▂▃▅▅▅▆██▆▃▂▃▅▅▅▅▆██▅▂▂▅▅▅▅▆██▆
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.41s]
+
+Waveform: ▃▂▃▅▆▅▆▆▆█▅▂▂▃▆▆▅▅▆█▅▃▂▃▅▆▆▅▆█▆▃▂▂▃▅▆▆▅██▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.50s]
+
+Waveform: ▃▂▂▅▆▆▅▆▆▆▃▂▂▃▆▆▆▅▆▆▅▂▂▂▅▆▆▅▅▆▆▃▂▂▃▆▆▆▆▆▆▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.60s]
+
+Waveform: ▃▂▂▅█▆▅▆▆▆▃▂▂▃▆▆▆▅▆▆▅▂▂▂▅█▆▆▆▆▅▃▂▂▃▆█▆▅▆▆▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.70s]
+
+Waveform: ▂▂▂▆██▆▅▅▅▃▂▂▅██▆▅▅▅▅▃▂▂▆██▆▅▅▅▃▂▂▅▆█▆▅▅▅▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.79s]
+
+Waveform: ▃▂▃▆██▆▃▃▅▃▂▂▅██▆▅▅▃▅▃▂▃▆██▆▅▅▅▃▂▂▅██▆▅▃▃▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.89s]
+
+Waveform: ▃▂▃▆██▅▃▃▅▃▂▃▅███▅▃▃▃▃▂▃▆██▅▃▃▅▃▃▃▅██▆▅▃▃▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [01.99s]
+
+Waveform: ▃▃▃▆██▅▂▂▃▅▃▃▅▆█▆▅▂▃▃▅▃▅▆██▆▃▃▃▃▃▃▅██▆▃▃▃▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [02.09s]
+
+Waveform: ▅▅▅▆██▅▂▂▃▃▅▅▅██▆▃▂▂▃▅▃▅▆██▅▃▂▃▅▅▅▅██▆▃▂▃▃
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [02.18s]
+
+Waveform: ▅▅▅▆██▅▂▂▃▅▅▅▆▆█▆▃▂▂▅▅▅▅▆██▅▂▂▃▅▅▅▆██▆▃▂▂▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
+♪ Đang phát: love-me-again.mp3 [02.28s]
+
+Waveform: ▆▆▆▆▆▆▅▂▂▃▆▆▆▆▆█▆▂▂▂▃▆▆▅▆██▅▂▂▃▅▆▅▅▆█▆▃▂▂▅
+♪ Intro...
+
+  Know I've done wrong, left your heart torn
+
+----------------------------------------
