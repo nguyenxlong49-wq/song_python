@@ -184,12 +184,13 @@ if _found:
 
 # Can chinh do lech loi vs giong ca si (giay): + = loi hien muon hon, - = som hon
 # Per-song offset: moi bai co offset rieng vi mp3 khac nhau
-LRC_OFFSET = -3.6  # default cho love-me-again (da chinh som 3.6s)
+# Fix dung: dung audio clock (get_pos) nen offset mac dinh 0.0, chi chinh khi file mp3 khac ban API
+LRC_OFFSET = 0.0
 PER_SONG_OFFSET = {
-    "love-me-again": -3.6,
-    "colors": 0.0,  # Jason Derulo Colors World Cup 230s da chuan, khong offset
+    "love-me-again": 0.0,
+    "colors": 0.0,
     "Jason Derulo": 0.0,
-    "superhero": 0.0,  # Unknown Brain da shift file +0.8s nen 0.0
+    "superhero": 0.0,
     "Unknown Brain": 0.0,
 }
 
@@ -409,16 +410,27 @@ def play_with_lrc(audio_path, lrc_path):
         print(f"[Loi] Khong the phat {audio_path}: {e}")
         return
 
-    print(f"{Fore.CYAN}Đang phát: {audio_path}")
-    print(f"{Fore.CYAN}Lời từ: {lrc_path}\n")
-    time.sleep(0.5)
+    print(f"{Fore.CYAN}Dang phat: {audio_path}")
+    print(f"{Fore.CYAN}Loi tu: {lrc_path}\n")
 
-    start = time.time()
+    # Fix sync: lay moc audio clock ngay sau play, khong sleep 0.5s truoc start
+    start_wall = time.time()
+
+    def get_elapsed():
+        # Uu tien audio clock tu pygame (khop loi hat), fallback wall clock
+        try:
+            pos = pygame.mixer.music.get_pos()
+            if pos is not None and pos >= 0:
+                return pos / 1000.0
+        except Exception:
+            pass
+        return time.time() - start_wall
+
     idx = 0
-    # Tim lyric hien tai dua tren elapsed
+    # Tim lyric hien tai dua tren elapsed (audio clock)
     try:
         while pygame.mixer.music.get_busy() or idx < len(lyrics):
-            elapsed = time.time() - start
+            elapsed = get_elapsed()
             # Cap nhat idx: tang khi qua moc tiep theo
             while idx + 1 < len(lyrics) and elapsed >= lyrics[idx+1][0]:
                 idx += 1
@@ -471,11 +483,12 @@ def play_with_lrc(audio_path, lrc_path):
 
             # 3. Hieu ung karaoke gradient + glow cho cau hien tai
             # Mau chay trai sang phai theo progress, chuyen mau muot, co glow
-            grad_text = karaoke_gradient_text(lyrics[idx][1], progress)
+            cur_line = lyrics[idx][1] if lyrics[idx][1].strip() else "♪ ♪ ♪"
+            grad_text = karaoke_gradient_text(cur_line, progress)
             # Them glow: in them 1 dong duoi mo hon
             print(f"▶ {grad_text}")
             # Glow nhe quanh chu: in them dong duoi voi mau mo
-            glow_line = "  " + "".join("·" if i < len(lyrics[idx][1])*progress else " " for i in range(len(lyrics[idx][1])))
+            glow_line = "  " + "".join("·" if i < len(cur_line)*progress else " " for i in range(len(cur_line)))
             if HAS_COLORAMA:
                 print(f"  {Fore.MAGENTA}{Style.DIM}{glow_line}{Style.RESET_ALL}")
 
@@ -564,7 +577,13 @@ if __name__ == "__main__":
     parser.add_argument("--lrc", help="Duong dan file loi .lrc")
     parser.add_argument("--demo", choices=["birthday", "twinkle"], default="birthday", help="Chon demo giai dieu tu tao")
     parser.add_argument("--create-lrc", action="store_true", help="Tao file sample.lrc mau")
+    parser.add_argument("--offset", type=float, default=None, help="Can chinh lech giay: + muon hon, - som hon. Vd --offset -0.5")
     args = parser.parse_args()
+    # --offset uu tien cao nhat, override per-song
+    if args.offset is not None:
+        globals()["LRC_OFFSET"] = args.offset
+        for k in list(globals().get("PER_SONG_OFFSET", {}).keys()):
+            globals()["PER_SONG_OFFSET"][k] = args.offset
 
     if args.create_lrc:
         create_sample_lrc()
