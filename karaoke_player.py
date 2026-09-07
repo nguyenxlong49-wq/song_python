@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import time
+import math
 # Fix Windows console encoding for Vietnamese
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -64,6 +65,33 @@ def rainbow_text(text, offset=0):
         res += f"{col}{Style.BRIGHT}{ch}"
     res += Style.RESET_ALL
     return res
+
+def wave_rainbow_text(text, phase=0):
+    """Uon song + 7 sac: moi ky tu vua doi mau vua len xuong theo sin"""
+    if not text:
+        return ["", text, ""]
+    # 3 dong de tao song uon
+    top = ""; mid = ""; bot = ""
+    for i,ch in enumerate(text):
+        # Song sin: -1 .. 1
+        wave = math.sin(i*0.8 + phase)
+        col = RAINBOW_COLORS[(i+int(phase)) % len(RAINBOW_COLORS)] if HAS_COLORAMA and RAINBOW_COLORS[0] else ""
+        bright = Style.BRIGHT if HAS_COLORAMA else ""
+        reset = Style.RESET_ALL if HAS_COLORAMA else ""
+        styled = f"{col}{bright}{ch}{reset}" if HAS_COLORAMA else ch
+        if wave > 0.5:
+            top += styled
+            mid += " "
+            bot += " "
+        elif wave < -0.5:
+            top += " "
+            mid += " "
+            bot += styled
+        else:
+            top += " "
+            mid += styled
+            bot += " "
+    return [top, mid, bot]
 
 # ================== CẤU HÌNH FILE NHẠC CỦA BẠN ==================
 # Đổi 2 dòng này thành tên file mp3 + lrc của bạn (đặt cùng thư mục karaoke_player.py)
@@ -324,21 +352,36 @@ def play_with_lrc(audio_path, lrc_path):
     try:
         while pygame.mixer.music.get_busy() or idx < len(lyrics):
             elapsed = time.time() - start
-            # Hiển thị dòng hiện tại khi đến thời gian
+            # Hiển thị dòng hiện tại khi đến thời gian - UON SONG 7 SAC
             while idx < len(lyrics) and elapsed >= lyrics[idx][0]:
-                clear_screen()
-                print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed:05.2f}s]\n")
-                # In 1 dòng trước (mờ)
-                if idx > 0:
-                    print(f"  {Fore.WHITE}{lyrics[idx-1][1]}")
-                # Dòng hiện tại 7 sac cau vong co animation
-                anim_offset = int(elapsed*4) % len(RAINBOW_COLORS) if HAS_COLORAMA else 0
-                print(f"▶ {rainbow_text(lyrics[idx][1], offset=anim_offset)}")
-                # In dòng kế tiếp (mờ)
-                if idx + 1 < len(lyrics):
-                    print(f"  {Fore.WHITE}{lyrics[idx+1][1]}")
-                print(f"\n{Fore.CYAN}{'-'*40}")
+                # Tinh thoi gian toi lyric tiep theo de gioi han animation
+                next_t = lyrics[idx+1][0] if idx+1 < len(lyrics) else elapsed + 1.5
+                wave_dur = min(1.4, max(0.7, next_t - elapsed - 0.3))
+                frames = max(4, int(wave_dur / 0.14))
+                for f in range(frames):
+                    # Cho phep ngat som neu lyric tiep theo da toi
+                    if f>0 and (time.time() - start) >= next_t - 0.1:
+                        break
+                    clear_screen()
+                    print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed+ f*0.14:05.2f}s] {Fore.CYAN}♪ uon song{Fore.WHITE}\n")
+                    if idx > 0:
+                        print(f"  {Fore.WHITE}{lyrics[idx-1][1]}")
+                    # Uon song ngang + 7 sac: ca dong lac lu theo sin
+                    phase = f * 0.9
+                    indent = int(4 + 4*math.sin(phase))
+                    wavy = " " * indent + rainbow_text(lyrics[idx][1], offset=int(phase*2))
+                    print(f"▶ {wavy}")
+                    # Them song nho duoi dong chinh de tao cam giac uon
+                    wave_line = " " * (indent+2) + "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])//2))
+                    if HAS_COLORAMA:
+                        print(f"  {Fore.CYAN}{wave_line}{Style.RESET_ALL}")
+                    if idx + 1 < len(lyrics):
+                        print(f"  {Fore.WHITE}{lyrics[idx+1][1]}")
+                    print(f"\n{Fore.CYAN}{'-'*40}")
+                    time.sleep(0.14)
                 idx += 1
+                # Cap nhat elapsed sau animation
+                elapsed = time.time() - start
 
             if idx >= len(lyrics) and not pygame.mixer.music.get_busy():
                 break
@@ -389,11 +432,14 @@ def play_melody_with_lyrics(song_data, title="Demo"):
             progress = f"[{i+1}/{len(song_data)}]"
 
             if HAS_COLORAMA:
-                print(f"{Fore.YELLOW}{progress} ▶ {rainbow_text(lyric_display, offset=i)} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
+                # Uon song ngang 7 sac cho demo
+                indent = int(3 + 3*math.sin(i*0.9))
+                wavy = " " * indent + rainbow_text(lyric_display, offset=i)
+                print(f"{Fore.YELLOW}{progress} ▶ {wavy} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
             else:
                 print(f"{progress} ▶ {lyric_display} ({note} {duration}ms)")
 
-            # Phát nốt nhạc (blocking đúng duration)
+            # Phát nốt nhạc (blocking đúng duration) - chay song song hieu ung
             play_tone(freq, duration)
 
         print(f"\n{Fore.GREEN}{Style.BRIGHT}✓ Hoàn thành bài: {title}!")
