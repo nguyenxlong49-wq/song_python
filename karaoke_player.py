@@ -366,15 +366,15 @@ def play_with_lrc(audio_path, lrc_path):
                     print(f"{Fore.YELLOW}♪ Đang phát: {os.path.basename(audio_path)} {Fore.WHITE}[{elapsed+ f*0.14:05.2f}s] {Fore.CYAN}♪ uon song{Fore.WHITE}\n")
                     if idx > 0:
                         print(f"  {Fore.WHITE}{lyrics[idx-1][1]}")
-                    # Uon song ngang + 7 sac: ca dong lac lu theo sin
+                    # Uon song mau, chu trang: chu giu trang, song ~ 7 sac chay
                     phase = f * 0.9
                     indent = int(4 + 4*math.sin(phase))
-                    wavy = " " * indent + rainbow_text(lyrics[idx][1], offset=int(phase*2))
-                    print(f"▶ {wavy}")
-                    # Them song nho duoi dong chinh de tao cam giac uon
-                    wave_line = " " * (indent+2) + "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])//2))
-                    if HAS_COLORAMA:
-                        print(f"  {Fore.CYAN}{wave_line}{Style.RESET_ALL}")
+                    print(f"{Fore.WHITE}{Style.BRIGHT}▶ {' ' * indent}{lyrics[idx][1]}{Style.RESET_ALL}")
+                    # Song uon 7 sac chay duoi chu
+                    wave_chars = "".join("~" if math.sin(i*0.6+phase)>0.3 else " " for i in range(len(lyrics[idx][1])))
+                    # Cat bot khoang trang dau/cuoi cho gon
+                    wave_line = " " * (indent+2) + rainbow_text(wave_chars, offset=int(phase*3))
+                    print(f"  {wave_line}")
                     if idx + 1 < len(lyrics):
                         print(f"  {Fore.WHITE}{lyrics[idx+1][1]}")
                     print(f"\n{Fore.CYAN}{'-'*40}")
@@ -432,10 +432,12 @@ def play_melody_with_lyrics(song_data, title="Demo"):
             progress = f"[{i+1}/{len(song_data)}]"
 
             if HAS_COLORAMA:
-                # Uon song ngang 7 sac cho demo
+                # Demo: chu trang, song duoi 7 sac
                 indent = int(3 + 3*math.sin(i*0.9))
-                wavy = " " * indent + rainbow_text(lyric_display, offset=i)
-                print(f"{Fore.YELLOW}{progress} ▶ {wavy} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
+                wave_chars = "~" * max(1, len(lyric_display)//3)
+                wave_line = rainbow_text(wave_chars, offset=i)
+                print(f"{Fore.YELLOW}{progress} {Fore.WHITE}{Style.BRIGHT}▶ {' ' * indent}{lyric_display}{Style.RESET_ALL} {Fore.CYAN}({note} {freq}Hz - {duration}ms){Style.RESET_ALL}")
+                print(f"       {' ' * indent}{wave_line}")
             else:
                 print(f"{progress} ▶ {lyric_display} ({note} {duration}ms)")
 
