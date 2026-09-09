@@ -352,9 +352,9 @@ class MainWindow(QMainWindow):
             print(f"[Auto LRC] tim thay: {guess}")
         elif src == "lrclib":
             QMessageBox.information(self, "AI Agent", f"Da lay loi tu LRCLIB:\n{guess}")
-        elif src == "placeholder":
-            QMessageBox.information(self, "AI Agent", f"Chua co loi that, da tao tam:\n{guess}\nSua file nay hoac Calibrate go nhip.")
-        self.load_song(dest, guess if os.path.exists(guess) else "")
+        elif src == "none":
+            QMessageBox.information(self, "AI Agent", "Khong tim thay LRC that.\nDung 'Dan loi -> Agent' hoac 'Lay LRC (LRCLIB)'.")
+        self.load_song(dest, guess if guess and os.path.exists(guess) else "")
         self.refresh_list()
 
     def paste_lyrics_agent(self):

@@ -185,7 +185,6 @@ def ensure_lrc(audio_path, plain_text=""):
                 f.write(dist)
             print(f"[Agent] rai loi tho: {guess}")
             return guess, "plain"
-    with open(guess, "w", encoding="utf-8") as f:
-        f.write(placeholder(ident["duration"] or 180.0))
-    print(f"[Agent] tao placeholder: {guess} (sua file nay hoac dung Calibrate)")
-    return guess, "placeholder"
+    # Khong tu tao placeholder gia nua: tra ve rong de GUI bao ro
+    print(f"[Agent] khong tim thay LRC that cho {ident['artist']} - {ident['track']}")
+    return "", "none"

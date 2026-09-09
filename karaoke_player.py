@@ -604,10 +604,12 @@ if __name__ == "__main__":
                 from lrc_agent import ensure_lrc
                 guess_lrc, src = ensure_lrc(args.audio)
                 print(f"[AI Agent] nguon LRC: {src} -> {guess_lrc}")
-                play_with_lrc(args.audio, guess_lrc)
-                # return de khong roi xuong branch phat khong loi ben duoi
-                import sys as _sys
-                _sys.exit(0)
+                if guess_lrc and os.path.exists(guess_lrc):
+                    play_with_lrc(args.audio, guess_lrc)
+                    # return de khong roi xuong branch phat khong loi ben duoi
+                    import sys as _sys
+                    _sys.exit(0)
+                print("[AI Agent] khong co LRC that, phat nhac khong loi")
             except SystemExit:
                 raise
             except Exception as e:
