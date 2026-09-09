@@ -24,6 +24,8 @@ class SeekSlider(QSlider):
             val = self.minimum() + (self.maximum() - self.minimum()) * event.position().x() / max(1, self.width())
             self.setValue(int(val))
             self.clicked_seek.emit(int(val))
+            event.accept()
+            return
         super().mousePressEvent(event)
 
 from lrc_parser import apply_offset, parse_lrc
@@ -321,23 +323,43 @@ class MainWindow(QMainWindow):
         self.refresh_list()
         print(f"[LRCLIB] da luu {out}")
 
+    def _apply_seek(self, sec):
+        # Ham chung: tua + khoa update 0.6s de audio kip bat kip, tranh reset
+        import time as _time
+        dur = self.player.get_duration()
+        if dur <= 0 or not self.player.audio_path:
+            return
+        sec = max(0.0, min(dur - 0.2, float(sec)))
+        self._seeking = False
+        self._last_seek_t = _time.time()
+        self._last_seek_sec = sec
+        self.player.seek(sec)
+        # Hien ngay loi + thanh xanh tai vi tri moi, khong doi audio
+        self.lyrics_view.set_position(sec)
+        self.slider.blockSignals(True)
+        self.slider.setValue(int(sec / dur * 1000))
+        self.slider.blockSignals(False)
+        self.t_cur.setText(fmt(sec))
+        self.visual.set_state(sec, True)
+
     def _do_seek(self):
+        import time as _time
+        # Bo qua neu vua click-seek (<0.6s) de tranh seek kep gay reset
+        if _time.time() - getattr(self, "_last_seek_t", 0) < 0.6:
+            self._seeking = False
+            return
         self._seeking = False
         dur = self.player.get_duration()
         if dur > 0:
             sec = self.slider.value() / 1000.0 * dur
-            self.player.seek(sec)
-            # Cap nhat lyrics + progress ngay lap tuc
-            self.update_player(force=True)
+            self._apply_seek(sec)
 
     def _click_seek(self, value):
         # Bam chuot vao thanh -> tua ngay kieu YouTube
-        self._seeking = False
         dur = self.player.get_duration()
         if dur > 0 and self.player.audio_path:
             sec = value / 1000.0 * dur
-            self.player.seek(sec)
-            self.update_player(force=True)
+            self._apply_seek(sec)
 
     def seek_relative(self, delta):
         # Tua +-giay
@@ -369,6 +391,12 @@ class MainWindow(QMainWindow):
             super().keyPressEvent(event)
 
     def update_player(self, force=False):
+        import time as _time
+        # Khoa 0.6s sau seek: giu thanh xanh + loi o vi tri moi, khong de get_pos cu reset
+        if _time.time() - getattr(self, "_last_seek_t", 0) < 0.6 and not force:
+            sec = getattr(self, "_last_seek_sec", 0.0)
+            self.visual.set_state(sec, True)
+            return
         pos = self.player.get_position()
         playing = self.player.is_playing()
         dur = self.player.get_duration()
