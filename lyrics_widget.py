@@ -28,13 +28,13 @@ class LyricsWidget(QWidget):
 
     def set_position(self, elapsed):
         self.position = float(elapsed)
+        if not self.lyrics:
+            return
         new_idx = find_index(self.lyrics, self.position)
         new_prog = estimate_progress(self.lyrics, new_idx, self.position)
-        # Chi redraw khi doi dong hoac progress doi > 2%
-        if new_idx != self.idx or abs(new_prog - self.progress) > 0.02:
-            self.idx = new_idx
-            self.progress = new_prog
-            self.update()
+        self.idx = new_idx
+        self.progress = new_prog
+        self.update()
 
     def _rainbow_gradient(self, x, width):
         grad = QLinearGradient(x, 0, x + max(1.0, width), 0)

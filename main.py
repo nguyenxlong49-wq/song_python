@@ -167,6 +167,8 @@ class MainWindow(QMainWindow):
 
         self.songs = QListWidget()
         self.songs.itemDoubleClicked.connect(lambda _i: self.load_selected())
+        self.songs.itemClicked.connect(lambda _i: self.load_selected())
+        self.songs.itemSelectionChanged.connect(self._preview_select)
         lay.addWidget(self.songs, 1)
         self.refresh_list()
 
@@ -198,6 +200,12 @@ class MainWindow(QMainWindow):
         lrc = os.path.splitext(path)[0] + ".lrc"
         self.load_song(path, lrc if os.path.exists(lrc) else "")
 
+    def _preview_select(self):
+        # Hien ten bai dang chon ngay ca khi chua phat
+        p = self.current_path()
+        if p and not self.player.audio_path:
+            self.song_label.setText(os.path.basename(p) + " (chon de phat)")
+
     def load_song(self, audio, lrc):
         try:
             self.player.stop()
@@ -211,12 +219,17 @@ class MainWindow(QMainWindow):
         if lrc and os.path.exists(lrc):
             try:
                 raw = parse_lrc(lrc)
+                print(f"[LRC] raw lines={len(raw)} first={raw[0] if raw else 'EMPTY'}")
                 self.lyrics = apply_offset(raw, self.offset)
                 print(f"[Load] lrc={lrc} lines={len(self.lyrics)} offset={self.offset:+.1f}s")
+                if not self.lyrics:
+                    QMessageBox.warning(self, "LRC", f"File LRC rong/khong parse duoc:\n{lrc}")
             except Exception as e:
                 print(f"[Loi LRC] {e}")
+                QMessageBox.warning(self, "LRC", f"Loi doc LRC:\n{e}")
         else:
-            print("[LRC] khong co file local, co the dung 'Lay LRC (LRCLIB)'")
+            print(f"[LRC] khong thay file: {lrc}, co the dung 'Lay LRC (LRCLIB)'")
+            QMessageBox.information(self, "LRC", f"Khong thay file loi:\n{lrc}\nChon 'Mo file LRC' hoac 'Lay LRC (LRCLIB)'.")
         self.lyrics_view.set_lyrics(self.lyrics)
         self.lyrics_view.set_position(0.0)
         self.slider.setValue(0)
