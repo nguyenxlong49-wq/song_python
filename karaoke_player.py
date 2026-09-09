@@ -183,11 +183,11 @@ if _found:
     DEFAULT_LRC = os.path.splitext(_found)[0] + ".lrc"
 
 # Can chinh do lech loi vs giong ca si (giay): + = loi hien muon hon, - = som hon
-# Per-song offset: moi bai co offset rieng vi mp3 khac nhau
-# Fix dung: dung audio clock (get_pos) nen offset mac dinh 0.0, chi chinh khi file mp3 khac ban API
+# Per-song offset: mp3 252.7s vs LRC 227s (love) va 182s vs 174s (super) lech ban thu am
+# love cham ~2s -> som 2s; super ve goc API 1.86s
 LRC_OFFSET = 0.0
 PER_SONG_OFFSET = {
-    "love-me-again": 0.0,
+    "love-me-again": -2.0,
     "colors": 0.0,
     "Jason Derulo": 0.0,
     "superhero": 0.0,

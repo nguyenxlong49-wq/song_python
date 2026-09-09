@@ -208,6 +208,12 @@ class MainWindow(QMainWindow):
         if p and not self.player.audio_path:
             self.song_label.setText(os.path.basename(p) + " (chon de phat)")
 
+    def _default_offset(self, audio):
+        low = audio.lower()
+        if "love-me-again" in low:
+            return -2.0
+        return 0.0
+
     def load_song(self, audio, lrc):
         try:
             self.player.stop()
@@ -216,6 +222,14 @@ class MainWindow(QMainWindow):
             print(f"[Loi load] {e}")
             QMessageBox.warning(self, "Loi", f"Khong mo duoc:\n{audio}\n{e}")
             return
+        # Tu dong gan offset rieng tung bai (love cham ~2s)
+        self.offset = self._default_offset(audio)
+        try:
+            self.offset_box.blockSignals(True)
+            self.offset_box.setValue(int(round(self.offset * 10)))
+            self.offset_box.blockSignals(False)
+        except Exception:
+            pass
         print(f"[Load] audio={audio}")
         self.lyrics = []
         if lrc and os.path.exists(lrc):
