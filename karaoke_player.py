@@ -187,7 +187,7 @@ if _found:
 # love cham ~2s -> som 2s; super ve goc API 1.86s
 LRC_OFFSET = 0.0
 PER_SONG_OFFSET = {
-    "love-me-again": -2.0,
+    "love-me-again": -3.0,
     "colors": 0.0,
     "Jason Derulo": 0.0,
     "superhero": 0.0,

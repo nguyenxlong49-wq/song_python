@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
     def _default_offset(self, audio):
         low = audio.lower()
         if "love-me-again" in low:
-            return -2.0
+            return -3.0
         return 0.0
 
     def load_song(self, audio, lrc):
