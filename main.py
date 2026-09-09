@@ -7,12 +7,34 @@ import sys
 import urllib.parse
 import urllib.request
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
-    QApplication, QFileDialog, QHBoxLayout, QLabel, QListWidget,
+    QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QListWidget,
     QMainWindow, QMessageBox, QPushButton, QSlider, QSpinBox,
     QVBoxLayout, QWidget,
 )
+
+
+class SttWorker(QThread):
+    progress = Signal(float, str)
+    done = Signal(str)
+    error = Signal(str)
+
+    def __init__(self, audio, model="tiny"):
+        super().__init__()
+        self.audio = audio
+        self.model = model
+
+    def run(self):
+        try:
+            import stt_lrc
+            def cb(frac, text):
+                self.progress.emit(float(frac), text)
+            lrc_text = stt_lrc.transcribe_to_lrc(self.audio, model=self.model, progress_cb=cb)
+            out = stt_lrc.save_lrc(self.audio, lrc_text)
+            self.done.emit(out)
+        except Exception as e:
+            self.error.emit(str(e))
 
 
 class SeekSlider(QSlider):
@@ -166,11 +188,17 @@ class MainWindow(QMainWindow):
         self.b_fetch.clicked.connect(self.fetch_current)
         self.b_paste = QPushButton("Dan loi -> Agent")
         self.b_paste.clicked.connect(self.paste_lyrics_agent)
+        self.b_stt = QPushButton("STT -> LRC")
+        self.b_stt.clicked.connect(self.stt_current)
+        self.stt_model = QComboBox()
+        self.stt_model.addItems(["tiny", "base", "small"])
         ctl_row.addWidget(self.offset_box)
         ctl_row.addWidget(self.b_audio)
         ctl_row.addWidget(self.b_file)
         ctl_row.addWidget(self.b_fetch)
         ctl_row.addWidget(self.b_paste)
+        ctl_row.addWidget(self.b_stt)
+        ctl_row.addWidget(self.stt_model)
         lay.addLayout(ctl_row)
 
         self.songs = QListWidget()
@@ -412,6 +440,37 @@ class MainWindow(QMainWindow):
         self.lyrics = apply_offset(parse_lrc(out), self.offset)
         self.lyrics_view.set_lyrics(self.lyrics)
         print(f"[Agent] da rai loi tho: {out}")
+
+    def stt_current(self):
+        # STT bai dang phat/chon -> LRC tu dong can gio
+        import stt_lrc
+        if not stt_lrc.backend():
+            QMessageBox.warning(self, "STT", "Chua cai STT.\nChay:\npip install faster-whisper")
+            return
+        path = self.player.audio_path or self.current_path()
+        if not path:
+            return
+        model = self.stt_model.currentText() if hasattr(self, "stt_model") else "tiny"
+        self.b_stt.setEnabled(False)
+        self.song_label.setText(f"Dang STT ({model}): {os.path.basename(path)}...")
+        self._stt = SttWorker(path, model)
+        self._stt.progress.connect(lambda frac, txt: self.song_label.setText(f"STT {int(frac*100)}%: {txt[:40]}"))
+        def _done(out):
+            self.b_stt.setEnabled(True)
+            try:
+                self.lyrics = apply_offset(parse_lrc(out), self.offset)
+                self.lyrics_view.set_lyrics(self.lyrics)
+                self.refresh_list()
+                QMessageBox.information(self, "STT", f"Da tao LRC tu audio:\n{out}\nMo lai bai de nghe + sua offset neu can.")
+                print(f"[STT] xong: {out}")
+            except Exception as e:
+                QMessageBox.warning(self, "STT", str(e))
+        def _err(msg):
+            self.b_stt.setEnabled(True)
+            QMessageBox.warning(self, "STT", f"Loi STT:\n{msg}")
+        self._stt.done.connect(_done)
+        self._stt.error.connect(_err)
+        self._stt.start()
 
     def choose_lrc(self):
         f, _x = QFileDialog.getOpenFileName(self, "Chon file LRC", "assets/music", "LRC (*.lrc)")
