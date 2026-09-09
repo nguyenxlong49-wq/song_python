@@ -204,9 +204,7 @@ class MainWindow(QMainWindow):
         self.songs = QListWidget()
         self.songs.itemDoubleClicked.connect(lambda _i: self.load_selected())
         self.songs.itemSelectionChanged.connect(self._preview_select)
-        # Click trai -> bang nho: Phat / Xoa (thay nut to)
-        self.songs.itemClicked.connect(self._song_popup)
-        # Chuot phai cung mo bang nho
+        # Chi chuot phai moi mo bang nho Phat/Xoa
         self.songs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.songs.customContextMenuRequested.connect(self._song_menu_at)
         lay.addWidget(self.songs, 1)
