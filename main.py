@@ -178,6 +178,12 @@ class MainWindow(QMainWindow):
         self.songs.itemClicked.connect(lambda _i: self.load_selected())
         self.songs.itemSelectionChanged.connect(self._preview_select)
         lay.addWidget(self.songs, 1)
+
+        del_row = QHBoxLayout()
+        self.b_del = QPushButton("Xoa bai dang chon")
+        self.b_del.clicked.connect(self.delete_selected)
+        del_row.addWidget(self.b_del)
+        lay.addLayout(del_row)
         self.refresh_list()
 
         self.tick = QTimer(self)
@@ -200,6 +206,37 @@ class MainWindow(QMainWindow):
         if 0 <= row < len(self._paths):
             return self._paths[row]
         return self._paths[0] if self._paths else ""
+
+    def delete_selected(self):
+        from PySide6.QtWidgets import QMessageBox
+        path = self.current_path()
+        if not path:
+            return
+        base = os.path.basename(path)
+        lrc = os.path.splitext(path)[0] + ".lrc"
+        ret = QMessageBox.question(self, "Xoa bai", f"Xoa khoi he thong?\n{base}\n(Kem file .lrc cung ten neu co)")
+        if ret != QMessageBox.Yes:
+            return
+        # Neu dang phat bai nay thi dung truoc
+        if self.player.audio_path and os.path.abspath(self.player.audio_path) == os.path.abspath(path):
+            self.player.stop()
+            self.lyrics = []
+            self.lyrics_view.set_lyrics([])
+            self.b_play.setText("▶")
+            self.song_label.setText("Chua chon bai")
+        try:
+            os.remove(path)
+            print(f"[System] da xoa nhac: {path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Xoa", f"Khong xoa duoc:\n{e}")
+            return
+        if os.path.exists(lrc):
+            try:
+                os.remove(lrc)
+                print(f"[System] da xoa loi: {lrc}")
+            except Exception as e:
+                print(f"[System] khong xoa duoc lrc: {e}")
+        self.refresh_list()
 
     def load_selected(self):
         path = self.current_path()
