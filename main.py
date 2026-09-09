@@ -323,19 +323,38 @@ class MainWindow(QMainWindow):
                 self.lyrics_view.set_lyrics(self.lyrics)
 
     def choose_audio(self):
-        # Chon mp3 -> AI agent tu xu ly LRC: local -> LRCLIB -> placeholder
+        # Chon mp3 -> luu vao assets/music -> AI agent tu xu ly LRC
+        import shutil
         from lrc_agent import ensure_lrc
-        f, _x = QFileDialog.getOpenFileName(self, "Chon file nhac", "assets/music", "Audio (*.mp3 *.wav *.ogg *.m4a)")
+        f, _x = QFileDialog.getOpenFileName(self, "Chon file nhac", "", "Audio (*.mp3 *.wav *.ogg *.m4a)")
         if not f:
             return
-        guess, src = ensure_lrc(f)
+        # Luu nhac vao he thong assets/music
+        music_dir = "assets/music"
+        os.makedirs(music_dir, exist_ok=True)
+        dest = os.path.join(music_dir, os.path.basename(f))
+        try:
+            # Chi copy neu khac file (tranh ghi de chinh no)
+            if os.path.abspath(f) != os.path.abspath(dest):
+                shutil.copy2(f, dest)
+                print(f"[System] da luu nhac: {dest}")
+            # Copy kem .lrc cung ten neu co
+            src_lrc = os.path.splitext(f)[0] + ".lrc"
+            dest_lrc = os.path.splitext(dest)[0] + ".lrc"
+            if os.path.exists(src_lrc) and os.path.abspath(src_lrc) != os.path.abspath(dest_lrc):
+                shutil.copy2(src_lrc, dest_lrc)
+                print(f"[System] da luu loi kem: {dest_lrc}")
+        except Exception as e:
+            QMessageBox.warning(self, "Luu nhac", f"Khong luu duoc vao {dest}:\n{e}")
+            dest = f
+        guess, src = ensure_lrc(dest)
         if src == "local":
             print(f"[Auto LRC] tim thay: {guess}")
         elif src == "lrclib":
             QMessageBox.information(self, "AI Agent", f"Da lay loi tu LRCLIB:\n{guess}")
         elif src == "placeholder":
             QMessageBox.information(self, "AI Agent", f"Chua co loi that, da tao tam:\n{guess}\nSua file nay hoac Calibrate go nhip.")
-        self.load_song(f, guess if os.path.exists(guess) else "")
+        self.load_song(dest, guess if os.path.exists(guess) else "")
         self.refresh_list()
 
     def paste_lyrics_agent(self):
