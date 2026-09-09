@@ -203,15 +203,13 @@ class MainWindow(QMainWindow):
 
         self.songs = QListWidget()
         self.songs.itemDoubleClicked.connect(lambda _i: self.load_selected())
-        self.songs.itemClicked.connect(lambda _i: self.load_selected())
         self.songs.itemSelectionChanged.connect(self._preview_select)
+        # Click trai -> bang nho: Phat / Xoa (thay nut to)
+        self.songs.itemClicked.connect(self._song_popup)
+        # Chuot phai cung mo bang nho
+        self.songs.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.songs.customContextMenuRequested.connect(self._song_menu_at)
         lay.addWidget(self.songs, 1)
-
-        del_row = QHBoxLayout()
-        self.b_del = QPushButton("Xoa bai dang chon")
-        self.b_del.clicked.connect(self.delete_selected)
-        del_row.addWidget(self.b_del)
-        lay.addLayout(del_row)
         self.refresh_list()
 
         self.tick = QTimer(self)
@@ -234,6 +232,28 @@ class MainWindow(QMainWindow):
         if 0 <= row < len(self._paths):
             return self._paths[row]
         return self._paths[0] if self._paths else ""
+
+    def _song_popup(self, item):
+        # Click trai vao bai -> bang nho ngay con tro
+        from PySide6.QtGui import QCursor
+        self._song_menu_at(QCursor.pos(), global_pos=True)
+
+    def _song_menu_at(self, pos, global_pos=False):
+        from PySide6.QtWidgets import QMenu
+        path = self.current_path()
+        if not path:
+            return
+        menu = QMenu(self)
+        act_play = menu.addAction("▶ Phat bai nay")
+        act_del = menu.addAction("Xoa bai hat")
+        if global_pos:
+            action = menu.exec(pos)
+        else:
+            action = menu.exec(self.songs.mapToGlobal(pos))
+        if action == act_play:
+            self.load_selected()
+        elif action == act_del:
+            self.delete_selected()
 
     def delete_selected(self):
         from PySide6.QtWidgets import QMessageBox
