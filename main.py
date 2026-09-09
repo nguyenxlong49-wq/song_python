@@ -206,7 +206,19 @@ class MainWindow(QMainWindow):
         if not path:
             return
         lrc = os.path.splitext(path)[0] + ".lrc"
-        self.load_song(path, lrc if os.path.exists(lrc) else "")
+        if os.path.exists(lrc):
+            self.load_song(path, lrc)
+        else:
+            # Click bai chua co LRC -> AI agent tu tao (LRCLIB/placeholder) roi phat
+            try:
+                from lrc_agent import ensure_lrc
+                guess, src = ensure_lrc(path)
+                print(f"[Auto LRC] {src} -> {guess}")
+                self.load_song(path, guess if os.path.exists(guess) else "")
+                self.refresh_list()
+            except Exception as e:
+                print(f"[Auto LRC loi] {e}")
+                self.load_song(path, "")
 
     def _preview_select(self):
         # Hien ten bai dang chon ngay ca khi chua phat

@@ -592,7 +592,7 @@ if __name__ == "__main__":
     elif args.audio and args.lrc:
         play_with_lrc(args.audio, args.lrc)
 
-    # Nếu chỉ có audio mà không có lrc -> tự tìm file .lrc cùng tên hoặc chỉ phát nhạc
+    # Nếu chỉ có audio mà không có lrc -> AI agent tu xu ly LRC roi phat
     elif args.audio and not args.lrc:
         # Tự đoán file lrc cùng tên: nhac.mp3 -> nhac.lrc
         guess_lrc = os.path.splitext(args.audio)[0] + ".lrc"
@@ -600,6 +600,18 @@ if __name__ == "__main__":
             print(f"Tim thay LRC cung ten: {guess_lrc}")
             play_with_lrc(args.audio, guess_lrc)
         else:
+            try:
+                from lrc_agent import ensure_lrc
+                guess_lrc, src = ensure_lrc(args.audio)
+                print(f"[AI Agent] nguon LRC: {src} -> {guess_lrc}")
+                play_with_lrc(args.audio, guess_lrc)
+                # return de khong roi xuong branch phat khong loi ben duoi
+                import sys as _sys
+                _sys.exit(0)
+            except SystemExit:
+                raise
+            except Exception as e:
+                print(f"[AI Agent loi] {e}")
             if not os.path.exists(args.audio):
                 print(f"[Loi] Khong tim thay file nhac: {args.audio}")
             elif HAS_PYGAME:
