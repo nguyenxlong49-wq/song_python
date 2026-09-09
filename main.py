@@ -292,13 +292,12 @@ class MainWindow(QMainWindow):
         if os.path.exists(lrc):
             self.load_song(path, lrc)
         else:
-            # Click bai chua co LRC -> AI agent tu tao (LRCLIB/placeholder) roi phat
+            # Click bai chua co LRC -> AI agent tu tao roi phat (giu selection)
             try:
                 from lrc_agent import ensure_lrc
                 guess, src = ensure_lrc(path)
                 print(f"[Auto LRC] {src} -> {guess}")
-                self.load_song(path, guess if os.path.exists(guess) else "")
-                self.refresh_list()
+                self.load_song(path, guess if guess and os.path.exists(guess) else "")
             except Exception as e:
                 print(f"[Auto LRC loi] {e}")
                 self.load_song(path, "")
@@ -380,19 +379,41 @@ class MainWindow(QMainWindow):
         self.b_play.setText("▶")
         print("[Stop] da dung")
 
-    def prev_song(self):
-        if not self._paths:
+    def _goto(self, r):
+        # Chuyen bai an toan: chan index, giu selection, log ro
+        if not getattr(self, "_paths", None):
+            print("[Next/Prev] chua co danh sach nhac")
             return
-        r = (self.songs.currentRow() - 1) % len(self._paths)
-        self.songs.setCurrentRow(r)
-        self.load_selected()
+        n = len(self._paths)
+        r = r % n
+        try:
+            self.songs.blockSignals(True)
+            self.songs.setCurrentRow(r)
+            self.songs.blockSignals(False)
+        except Exception:
+            pass
+        try:
+            print(f"[Next/Prev] -> [{r+1}/{n}] {os.path.basename(self._paths[r])}")
+            self.load_selected()
+        except Exception as e:
+            print(f"[Next/Prev loi] {e}")
+            QMessageBox.warning(self, "Next/Prev", str(e))
+
+    def prev_song(self):
+        if not getattr(self, "_paths", None):
+            return
+        cur = self.songs.currentRow()
+        if cur < 0:
+            cur = 0
+        self._goto(cur - 1)
 
     def next_song(self):
-        if not self._paths:
+        if not getattr(self, "_paths", None):
             return
-        r = (self.songs.currentRow() + 1) % len(self._paths)
-        self.songs.setCurrentRow(r)
-        self.load_selected()
+        cur = self.songs.currentRow()
+        if cur < 0:
+            cur = -1
+        self._goto(cur + 1)
 
     def _offset_changed(self, v):
         # QSpinBox ds (deci-giay) de chinh 0.1s
