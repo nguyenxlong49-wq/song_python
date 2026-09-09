@@ -7,12 +7,24 @@ import sys
 import urllib.parse
 import urllib.request
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QApplication, QFileDialog, QHBoxLayout, QLabel, QListWidget,
     QMainWindow, QMessageBox, QPushButton, QSlider, QSpinBox,
     QVBoxLayout, QWidget,
 )
+
+
+class SeekSlider(QSlider):
+    """Slider kieu YouTube: bam chuot vao bat ky dau de tua ngay."""
+    clicked_seek = Signal(int)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            val = self.minimum() + (self.maximum() - self.minimum()) * event.position().x() / max(1, self.width())
+            self.setValue(int(val))
+            self.clicked_seek.emit(int(val))
+        super().mousePressEvent(event)
 
 from lrc_parser import apply_offset, parse_lrc
 from lyrics_widget import LyricsWidget
@@ -27,8 +39,11 @@ QLabel#Song { font-size: 14px; font-weight: 600; color: #9be7ff; }
 QListWidget { background: rgba(255,255,255,14); border: 1px solid rgba(120,180,255,60); border-radius: 12px; padding: 6px; }
 QPushButton { background: rgba(90,140,255,40); border: 1px solid rgba(120,180,255,80); border-radius: 10px; padding: 8px 14px; }
 QPushButton:hover { background: rgba(90,140,255,80); }
-QSlider::groove:horizontal { height: 6px; background: rgba(255,255,255,40); border-radius: 3px; }
-QSlider::handle:horizontal { width: 14px; margin: -5px 0; border-radius: 7px; background: #50dcff; }
+QSlider::groove:horizontal { height: 8px; background: rgba(255,255,255,35); border-radius: 4px; }
+QSlider::sub-page:horizontal { height: 8px; background: #2196F3; border-radius: 4px; }
+QSlider::add-page:horizontal { height: 8px; background: rgba(255,255,255,35); border-radius: 4px; }
+QSlider::handle:horizontal { width: 16px; margin: -5px 0; border-radius: 8px; background: #fff; border: 2px solid #2196F3; }
+QSlider::handle:horizontal:hover { background: #2196F3; }
 """
 
 
@@ -99,10 +114,11 @@ class MainWindow(QMainWindow):
         self.lyrics_view = LyricsWidget()
         lay.addWidget(self.lyrics_view)
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = SeekSlider(Qt.Horizontal)
         self.slider.setRange(0, 1000)
         self.slider.sliderPressed.connect(lambda: setattr(self, "_seeking", True))
         self.slider.sliderReleased.connect(self._do_seek)
+        self.slider.clicked_seek.connect(self._click_seek)
         lay.addWidget(self.slider)
 
         time_row = QHBoxLayout()
@@ -115,16 +131,22 @@ class MainWindow(QMainWindow):
 
         btn_row = QHBoxLayout()
         self.b_prev = QPushButton("⏮")
+        self.b_rw = QPushButton("⏪ 10s")
         self.b_play = QPushButton("▶")
         self.b_stop = QPushButton("⏹")
+        self.b_ff = QPushButton("10s ⏩")
         self.b_next = QPushButton("⏭")
         self.b_prev.clicked.connect(self.prev_song)
+        self.b_rw.clicked.connect(lambda: self.seek_relative(-10))
         self.b_play.clicked.connect(self.toggle)
         self.b_stop.clicked.connect(self.stop_song)
+        self.b_ff.clicked.connect(lambda: self.seek_relative(10))
         self.b_next.clicked.connect(self.next_song)
         btn_row.addWidget(self.b_prev)
+        btn_row.addWidget(self.b_rw)
         btn_row.addWidget(self.b_play)
         btn_row.addWidget(self.b_stop)
+        btn_row.addWidget(self.b_ff)
         btn_row.addWidget(self.b_next)
         lay.addLayout(btn_row)
 
@@ -294,6 +316,44 @@ class MainWindow(QMainWindow):
             self.player.seek(sec)
             # Cap nhat lyrics + progress ngay lap tuc
             self.update_player(force=True)
+
+    def _click_seek(self, value):
+        # Bam chuot vao thanh -> tua ngay kieu YouTube
+        self._seeking = False
+        dur = self.player.get_duration()
+        if dur > 0 and self.player.audio_path:
+            sec = value / 1000.0 * dur
+            self.player.seek(sec)
+            self.update_player(force=True)
+
+    def seek_relative(self, delta):
+        # Tua +-giay
+        if not self.player.audio_path:
+            return
+        pos = self.player.get_position()
+        dur = self.player.get_duration()
+        new = max(0.0, pos + delta)
+        if dur > 0:
+            new = min(dur - 0.5, new)
+        self.player.seek(new)
+        self.update_player(force=True)
+        print(f"[Seek] {pos:.1f}s -> {new:.1f}s")
+
+    def keyPressEvent(self, event):
+        # Space: play/pause, <-/->: tua 5s, J/L: tua 10s nhu YouTube
+        k = event.key()
+        if k == Qt.Key_Space:
+            self.toggle()
+        elif k == Qt.Key_Right:
+            self.seek_relative(5)
+        elif k == Qt.Key_Left:
+            self.seek_relative(-5)
+        elif k == Qt.Key_L:
+            self.seek_relative(10)
+        elif k == Qt.Key_J:
+            self.seek_relative(-10)
+        else:
+            super().keyPressEvent(event)
 
     def update_player(self, force=False):
         pos = self.player.get_position()
