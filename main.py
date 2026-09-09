@@ -116,12 +116,15 @@ class MainWindow(QMainWindow):
         btn_row = QHBoxLayout()
         self.b_prev = QPushButton("⏮")
         self.b_play = QPushButton("▶")
+        self.b_stop = QPushButton("⏹")
         self.b_next = QPushButton("⏭")
         self.b_prev.clicked.connect(self.prev_song)
         self.b_play.clicked.connect(self.toggle)
+        self.b_stop.clicked.connect(self.stop_song)
         self.b_next.clicked.connect(self.next_song)
         btn_row.addWidget(self.b_prev)
         btn_row.addWidget(self.b_play)
+        btn_row.addWidget(self.b_stop)
         btn_row.addWidget(self.b_next)
         lay.addLayout(btn_row)
 
@@ -175,6 +178,7 @@ class MainWindow(QMainWindow):
 
     def load_song(self, audio, lrc):
         try:
+            self.player.stop()
             self.player.load(audio)
         except Exception as e:
             print(f"[Loi load] {e}")
@@ -192,24 +196,37 @@ class MainWindow(QMainWindow):
         else:
             print("[LRC] khong co file local, co the dung 'Lay LRC (LRCLIB)'")
         self.lyrics_view.set_lyrics(self.lyrics)
+        self.lyrics_view.set_position(0.0)
+        self.slider.setValue(0)
         self.song_label.setText(os.path.basename(audio))
         self.player.play()
         self.b_play.setText("⏸")
 
     def toggle(self):
+        # Dung is_paused rieng vi get_busy() van True khi pause
+        if self.player.is_paused():
+            self.player.resume()
+            self.b_play.setText("⏸")
+            return
         if self.player.is_playing():
             self.player.pause()
             self.b_play.setText("▶")
-        else:
-            # Neu chua load gi thi load bai dang chon
-            if not self.player.audio_path:
-                self.load_selected()
-                return
-            self.player.resume()
-            # Neu resume ma van khong busy (da stop) thi play lai
-            if not self.player.is_playing():
-                self.player.play()
-            self.b_play.setText("⏸")
+            return
+        # Neu chua load gi thi load bai dang chon
+        if not self.player.audio_path:
+            self.load_selected()
+            return
+        # Da stop -> play lai tu dau
+        self.player.play()
+        self.b_play.setText("⏸")
+
+    def stop_song(self):
+        self.player.stop()
+        self.lyrics_view.set_position(0.0)
+        self.slider.setValue(0)
+        self.t_cur.setText("00:00")
+        self.b_play.setText("▶")
+        print("[Stop] da dung")
 
     def prev_song(self):
         if not self._paths:

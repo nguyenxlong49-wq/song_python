@@ -37,6 +37,7 @@ class MusicPlayer:
         self.audio_path = ""
         self.duration = 0.0
         self._paused_pos = 0.0
+        self._is_paused = False
 
     def _ensure_mixer(self):
         if not HAS_PYGAME:
@@ -48,14 +49,20 @@ class MusicPlayer:
         if not os.path.exists(audio_path):
             raise FileNotFoundError(audio_path)
         self._ensure_mixer()
+        try:
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
         pygame.mixer.music.load(audio_path)
         self.audio_path = audio_path
         self.duration = _duration_via_mutagen(audio_path)
         self._paused_pos = 0.0
+        self._is_paused = False
         return True
 
     def play(self, start_sec=0.0):
         self._ensure_mixer()
+        self._is_paused = False
         if start_sec and start_sec > 0:
             try:
                 # pygame ho tro start cho OGG/MP3 tren mot so build
@@ -68,14 +75,18 @@ class MusicPlayer:
     def pause(self):
         if HAS_PYGAME and pygame.mixer.get_init():
             try:
-                self._paused_pos = self.get_position()
+                pos = pygame.mixer.music.get_pos()
+                if pos is not None and pos >= 0:
+                    self._paused_pos = pos / 1000.0
             except Exception:
                 pass
             pygame.mixer.music.pause()
+            self._is_paused = True
 
     def resume(self):
         if HAS_PYGAME and pygame.mixer.get_init():
             pygame.mixer.music.unpause()
+            self._is_paused = False
 
     def stop(self):
         if HAS_PYGAME and pygame.mixer.get_init():
@@ -83,6 +94,8 @@ class MusicPlayer:
                 pygame.mixer.music.stop()
             except Exception:
                 pass
+        self._is_paused = False
+        self._paused_pos = 0.0
 
     def seek(self, sec):
         """Seek: dung play(start=sec). Tra ve vi tri moi."""
@@ -90,16 +103,29 @@ class MusicPlayer:
         sec = max(0.0, float(sec))
         if self.duration and sec > self.duration:
             sec = max(0.0, self.duration - 0.5)
+        was_paused = self._is_paused
         try:
             pygame.mixer.music.play(start=sec)
         except Exception:
             # Fallback: play tu dau neu backend khong ho tro start
             pygame.mixer.music.play()
+            self._is_paused = False
             return self.get_position()
+        self._is_paused = False
+        # Neu truoc do dang pause thi giu pause tai vi tri moi
+        if was_paused:
+            try:
+                self._paused_pos = sec
+                pygame.mixer.music.pause()
+                self._is_paused = True
+            except Exception:
+                pass
         return sec
 
     def get_position(self):
         """Vi tri audio that (giay). Dung de dong bo lyrics/progress/visualizer."""
+        if self._is_paused:
+            return self._paused_pos
         if HAS_PYGAME and pygame.mixer.get_init():
             try:
                 pos = pygame.mixer.music.get_pos()
@@ -109,7 +135,13 @@ class MusicPlayer:
                 pass
         return self._paused_pos
 
+    def is_paused(self):
+        return self._is_paused
+
     def is_playing(self):
+        # pygame get_busy() van True khi pause nen phai tru _is_paused
+        if self._is_paused:
+            return False
         if HAS_PYGAME and pygame.mixer.get_init():
             try:
                 return bool(pygame.mixer.music.get_busy())
