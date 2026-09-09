@@ -164,10 +164,13 @@ class MainWindow(QMainWindow):
         self.b_file.clicked.connect(self.choose_lrc)
         self.b_fetch = QPushButton("Lay LRC (LRCLIB)")
         self.b_fetch.clicked.connect(self.fetch_current)
+        self.b_paste = QPushButton("Dan loi -> Agent")
+        self.b_paste.clicked.connect(self.paste_lyrics_agent)
         ctl_row.addWidget(self.offset_box)
         ctl_row.addWidget(self.b_audio)
         ctl_row.addWidget(self.b_file)
         ctl_row.addWidget(self.b_fetch)
+        ctl_row.addWidget(self.b_paste)
         lay.addLayout(ctl_row)
 
         self.songs = QListWidget()
@@ -308,18 +311,39 @@ class MainWindow(QMainWindow):
                 self.lyrics_view.set_lyrics(self.lyrics)
 
     def choose_audio(self):
-        # Chon mp3 -> tu dong tim .lrc cung thu muc/tên
+        # Chon mp3 -> AI agent tu xu ly LRC: local -> LRCLIB -> placeholder
+        from lrc_agent import ensure_lrc
         f, _x = QFileDialog.getOpenFileName(self, "Chon file nhac", "assets/music", "Audio (*.mp3 *.wav *.ogg *.m4a)")
         if not f:
             return
-        guess = os.path.splitext(f)[0] + ".lrc"
-        if os.path.exists(guess):
+        guess, src = ensure_lrc(f)
+        if src == "local":
             print(f"[Auto LRC] tim thay: {guess}")
-            self.load_song(f, guess)
-        else:
-            print(f"[Auto LRC] khong thay {guess}, phat nhac khong loi")
-            self.load_song(f, "")
+        elif src == "lrclib":
+            QMessageBox.information(self, "AI Agent", f"Da lay loi tu LRCLIB:\n{guess}")
+        elif src == "placeholder":
+            QMessageBox.information(self, "AI Agent", f"Chua co loi that, da tao tam:\n{guess}\nSua file nay hoac Calibrate go nhip.")
+        self.load_song(f, guess if os.path.exists(guess) else "")
         self.refresh_list()
+
+    def paste_lyrics_agent(self):
+        # Dan loi tho -> agent rai timestamp theo duration
+        from PySide6.QtWidgets import QInputDialog
+        from lrc_agent import distribute_plain
+        if not self.player.audio_path:
+            QMessageBox.warning(self, "Agent", "Chon bai hat truoc.")
+            return
+        text, ok = QInputDialog.getMultiLineText(self, "AI Agent", "Dan loi tho (moi dong 1 cau):")
+        if not ok or not text.strip():
+            return
+        dur = self.player.get_duration() or 180.0
+        lrc_text = distribute_plain(text, dur)
+        out = os.path.splitext(self.player.audio_path)[0] + ".lrc"
+        with open(out, "w", encoding="utf-8") as fh:
+            fh.write(lrc_text)
+        self.lyrics = apply_offset(parse_lrc(out), self.offset)
+        self.lyrics_view.set_lyrics(self.lyrics)
+        print(f"[Agent] da rai loi tho: {out}")
 
     def choose_lrc(self):
         f, _x = QFileDialog.getOpenFileName(self, "Chon file LRC", "assets/music", "LRC (*.lrc)")
