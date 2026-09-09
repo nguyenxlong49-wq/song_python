@@ -158,11 +158,14 @@ class MainWindow(QMainWindow):
         self.offset_box.setSingleStep(1)
         self.offset_box.setPrefix("offset ds: ")
         self.offset_box.valueChanged.connect(self._offset_changed)
+        self.b_audio = QPushButton("Mo nhac MP3")
+        self.b_audio.clicked.connect(self.choose_audio)
         self.b_file = QPushButton("Mo file LRC")
         self.b_file.clicked.connect(self.choose_lrc)
         self.b_fetch = QPushButton("Lay LRC (LRCLIB)")
         self.b_fetch.clicked.connect(self.fetch_current)
         ctl_row.addWidget(self.offset_box)
+        ctl_row.addWidget(self.b_audio)
         ctl_row.addWidget(self.b_file)
         ctl_row.addWidget(self.b_fetch)
         lay.addLayout(ctl_row)
@@ -303,6 +306,20 @@ class MainWindow(QMainWindow):
             if os.path.exists(lrc):
                 self.lyrics = apply_offset(parse_lrc(lrc), self.offset)
                 self.lyrics_view.set_lyrics(self.lyrics)
+
+    def choose_audio(self):
+        # Chon mp3 -> tu dong tim .lrc cung thu muc/tên
+        f, _x = QFileDialog.getOpenFileName(self, "Chon file nhac", "assets/music", "Audio (*.mp3 *.wav *.ogg *.m4a)")
+        if not f:
+            return
+        guess = os.path.splitext(f)[0] + ".lrc"
+        if os.path.exists(guess):
+            print(f"[Auto LRC] tim thay: {guess}")
+            self.load_song(f, guess)
+        else:
+            print(f"[Auto LRC] khong thay {guess}, phat nhac khong loi")
+            self.load_song(f, "")
+        self.refresh_list()
 
     def choose_lrc(self):
         f, _x = QFileDialog.getOpenFileName(self, "Chon file LRC", "assets/music", "LRC (*.lrc)")
