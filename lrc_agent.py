@@ -37,19 +37,29 @@ def read_tags(audio_path):
     return info
 
 
+def clean_suffix(text):
+    """Cat hau to YouTube/NCS: [Official...], (Official...), Future Bass, NCS, Copyright Free Music, HD..."""
+    import re
+    t = text
+    t = re.sub(r"\[.*?Official.*?\]", "", t, flags=re.I)
+    t = re.sub(r"\(.*?Official.*?\)", "", t, flags=re.I)
+    for pat in [r"Future Bass", r"\bNCS\b", r"Copyright Free Music", r"Copyright Free", r"\bHD\b",
+                r"Official Music Video", r"Official Video", r"Official Audio", r"Lyrics? Video",
+                r"Coca-Cola.*", r"FIFA World Cup.*"]:
+        t = re.sub(pat, "", t, flags=re.I)
+    t = re.sub(r"\s{2,}", " ", t).strip(" -_()[]")
+    return t.strip()
+
+
 def guess_info(audio_path):
     tags = read_tags(audio_path)
     if tags["title"]:
-        return tags["title"], tags["artist"]
+        return clean_suffix(tags["title"]), clean_suffix(tags["artist"])
     base = os.path.splitext(os.path.basename(audio_path))[0]
-    # Bo cac hau to YouTube: [Official Video], (NCS...), _ HD
-    for cut in ["[Official", "(Official", "_ HD", "HD.mp3"]:
-        if cut in base:
-            base = base.split(cut)[0].strip(" -_")
     if " - " in base:
         artist, track = base.split(" - ", 1)
-        return track.strip(), artist.strip()
-    return base.strip(), ""
+        return clean_suffix(track), clean_suffix(artist)
+    return clean_suffix(base), ""
 
 
 def duration_of(audio_path):
