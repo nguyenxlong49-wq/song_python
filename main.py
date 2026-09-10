@@ -215,14 +215,23 @@ class MainWindow(QMainWindow):
         vol_row = QHBoxLayout()
         self.b_mute = QPushButton("🔊")
         self.b_mute.setFixedWidth(48)
-        self.b_mute.clicked.connect(self.toggle_mute)
-        from PySide6.QtWidgets import QSlider as _QS
-        self.vol = _QS(Qt.Horizontal)
+        self.b_mute.setToolTip("Click: thanh volume nho | Double-click/M: mute")
+        self.b_mute.clicked.connect(self._toggle_vol_popup)
+        self.b_mute.installEventFilter(self)
+        from PySide6.QtWidgets import QSlider as _QS, QFrame as _QFrame, QVBoxLayout as _QVL
+        # Popup thanh doc nho hien khi click icon (kieu YouTube)
+        self.vol_popup = _QFrame(self, Qt.Popup)
+        self.vol_popup.setStyleSheet("QFrame{background:#1a2138;border:1px solid rgba(120,180,255,90);border-radius:10px;}")
+        _pvl = _QVL(self.vol_popup)
+        _pvl.setContentsMargins(8, 8, 8, 8)
+        self.vol = _QS(Qt.Vertical)
         self.vol.setRange(0, 100)
         self.vol.setValue(80)
+        self.vol.setMinimumHeight(120)
         self.vol.valueChanged.connect(self._vol_changed)
+        _pvl.addWidget(self.vol)
         vol_row.addWidget(self.b_mute)
-        vol_row.addWidget(self.vol)
+        vol_row.addStretch(1)
         lay.addLayout(vol_row)
         self._muted = False
         self._vol_before_mute = 80
@@ -635,6 +644,22 @@ class MainWindow(QMainWindow):
                 _pg.mixer.music.set_volume(v / 100.0)
         except Exception:
             pass
+
+    def eventFilter(self, obj, event):
+        from PySide6.QtCore import QEvent
+        if obj is getattr(self, "b_mute", None) and event.type() == QEvent.MouseButtonDblClick:
+            self.toggle_mute()
+            return True
+        return super().eventFilter(obj, event)
+
+    def _toggle_vol_popup(self):
+        # Click icon loa -> hien thanh doc nho ngay tren nut
+        if self.vol_popup.isVisible():
+            self.vol_popup.hide()
+            return
+        pos = self.b_mute.mapToGlobal(self.b_mute.rect().topLeft())
+        self.vol_popup.setGeometry(pos.x() - 6, pos.y() - 160, 52, 150)
+        self.vol_popup.show()
 
     def toggle_mute(self):
         if getattr(self, "_muted", False):
