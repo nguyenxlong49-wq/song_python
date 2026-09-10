@@ -78,23 +78,6 @@ def scan_songs():
     return sorted(set(songs))
 
 
-def fetch_lrclib(track, artist, duration=0):
-    """Lay syncedLyrics tu LRCLIB, tra ve chuoi LRC hoac ''. Khong hard-code lyrics."""
-    try:
-        qs = {"track_name": track, "artist_name": artist}
-        if duration:
-            qs["duration"] = str(int(duration))
-        url = "https://lrclib.net/api/get?" + urllib.parse.urlencode(qs)
-        req = urllib.request.Request(url, headers={"User-Agent": "song_python-gui/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as r:
-            import json
-            data = json.loads(r.read().decode("utf-8"))
-            return data.get("syncedLyrics") or ""
-    except Exception as e:
-        print(f"[LRCLIB loi] {e}")
-        return ""
-
-
 def fmt(sec):
     sec = max(0, int(sec))
     return f"{sec // 60:02d}:{sec % 60:02d}"
@@ -184,10 +167,6 @@ class MainWindow(QMainWindow):
         self.b_audio.clicked.connect(self.choose_audio)
         self.b_file = QPushButton("Mo file LRC")
         self.b_file.clicked.connect(self.choose_lrc)
-        self.b_fetch = QPushButton("Lay LRC (LRCLIB)")
-        self.b_fetch.clicked.connect(self.fetch_current)
-        self.b_paste = QPushButton("Dan loi -> Agent")
-        self.b_paste.clicked.connect(self.paste_lyrics_agent)
         self.b_stt = QPushButton("STT -> LRC")
         self.b_stt.clicked.connect(self.stt_current)
         self.stt_model = QComboBox()
@@ -195,8 +174,6 @@ class MainWindow(QMainWindow):
         ctl_row.addWidget(self.offset_box)
         ctl_row.addWidget(self.b_audio)
         ctl_row.addWidget(self.b_file)
-        ctl_row.addWidget(self.b_fetch)
-        ctl_row.addWidget(self.b_paste)
         ctl_row.addWidget(self.b_stt)
         ctl_row.addWidget(self.stt_model)
         lay.addLayout(ctl_row)
@@ -377,8 +354,8 @@ class MainWindow(QMainWindow):
                 print(f"[Loi LRC] {e}")
                 QMessageBox.warning(self, "LRC", f"Loi doc LRC:\n{e}")
         else:
-            print(f"[LRC] khong thay file: {lrc}, co the dung 'Lay LRC (LRCLIB)'")
-            QMessageBox.information(self, "LRC", f"Khong thay file loi:\n{lrc}\nChon 'Mo file LRC' hoac 'Lay LRC (LRCLIB)'.")
+            print(f"[LRC] khong thay file: {lrc}")
+            QMessageBox.information(self, "LRC", f"Khong thay file loi:\n{lrc}\nChon 'Mo file LRC' hoac 'STT -> LRC'.")
         self.lyrics_view.set_lyrics(self.lyrics)
         self.lyrics_view.set_position(0.0)
         self.slider.setValue(0)
@@ -496,28 +473,9 @@ class MainWindow(QMainWindow):
         elif src == "lrclib":
             QMessageBox.information(self, "AI Agent", f"Da lay loi tu LRCLIB:\n{guess}")
         elif src == "none":
-            QMessageBox.information(self, "AI Agent", "Khong tim thay LRC that.\nDung 'Dan loi -> Agent' hoac 'Lay LRC (LRCLIB)'.")
+            QMessageBox.information(self, "AI Agent", "Khong tim thay LRC that.\nDung 'Mo file LRC' hoac 'STT -> LRC'.")
         self.load_song(dest, guess if guess and os.path.exists(guess) else "")
         self.refresh_list()
-
-    def paste_lyrics_agent(self):
-        # Dan loi tho -> agent rai timestamp theo duration
-        from PySide6.QtWidgets import QInputDialog
-        from lrc_agent import distribute_plain
-        if not self.player.audio_path:
-            QMessageBox.warning(self, "Agent", "Chon bai hat truoc.")
-            return
-        text, ok = QInputDialog.getMultiLineText(self, "AI Agent", "Dan loi tho (moi dong 1 cau):")
-        if not ok or not text.strip():
-            return
-        dur = self.player.get_duration() or 180.0
-        lrc_text = distribute_plain(text, dur)
-        out = os.path.splitext(self.player.audio_path)[0] + ".lrc"
-        with open(out, "w", encoding="utf-8") as fh:
-            fh.write(lrc_text)
-        self.lyrics = apply_offset(parse_lrc(out), self.offset)
-        self.lyrics_view.set_lyrics(self.lyrics)
-        print(f"[Agent] da rai loi tho: {out}")
 
     def stt_current(self):
         # STT bai dang phat/chon -> LRC tu dong can gio
@@ -559,29 +517,6 @@ class MainWindow(QMainWindow):
                 print(f"[Load] lrc thu cong: {f}")
             except Exception as e:
                 QMessageBox.warning(self, "Loi", str(e))
-
-    def fetch_current(self):
-        path = self.player.audio_path or self.current_path()
-        if not path:
-            return
-        base = os.path.splitext(os.path.basename(path))[0]
-        # Doan "Artist - Title" neu co, nguoc lai dung base lam track
-        if " - " in base:
-            artist, track = base.split(" - ", 1)
-        else:
-            artist, track = "", base
-        dur = self.player.get_duration()
-        lrc_text = fetch_lrclib(track.strip(), artist.strip(), dur)
-        if not lrc_text:
-            QMessageBox.information(self, "LRCLIB", "API khong tra lyrics. Hay chon file .lrc local.")
-            return
-        out = os.path.splitext(path)[0] + ".lrc"
-        with open(out, "w", encoding="utf-8") as f:
-            f.write(lrc_text)
-        self.lyrics = apply_offset(parse_lrc(out), self.offset)
-        self.lyrics_view.set_lyrics(self.lyrics)
-        self.refresh_list()
-        print(f"[LRCLIB] da luu {out}")
 
     def _apply_seek(self, sec):
         # Ham chung: tua + khoa update 0.6s de audio kip bat kip, tranh reset
