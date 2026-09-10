@@ -203,11 +203,35 @@ class MainWindow(QMainWindow):
 
         self.songs = QListWidget()
         self.songs.itemDoubleClicked.connect(lambda _i: self.load_selected())
+        # Click trai 1 cai la phat ngay (fix click chon bai)
+        self.songs.itemClicked.connect(lambda _i: self.load_selected())
         self.songs.itemSelectionChanged.connect(self._preview_select)
         # Chi chuot phai moi mo bang nho Phat/Xoa
         self.songs.setContextMenuPolicy(Qt.CustomContextMenu)
         self.songs.customContextMenuRequested.connect(self._song_menu_at)
         lay.addWidget(self.songs, 1)
+
+        # Volume kieu YouTube
+        vol_row = QHBoxLayout()
+        self.b_mute = QPushButton("🔊")
+        self.b_mute.setFixedWidth(48)
+        self.b_mute.clicked.connect(self.toggle_mute)
+        from PySide6.QtWidgets import QSlider as _QS
+        self.vol = _QS(Qt.Horizontal)
+        self.vol.setRange(0, 100)
+        self.vol.setValue(80)
+        self.vol.valueChanged.connect(self._vol_changed)
+        vol_row.addWidget(self.b_mute)
+        vol_row.addWidget(self.vol)
+        lay.addLayout(vol_row)
+        self._muted = False
+        self._vol_before_mute = 80
+        try:
+            import pygame as _pg
+            if _pg.mixer.get_init():
+                _pg.mixer.music.set_volume(0.8)
+        except Exception:
+            pass
         self.refresh_list()
 
         self.tick = QTimer(self)
@@ -351,6 +375,12 @@ class MainWindow(QMainWindow):
         self.slider.setValue(0)
         self.song_label.setText(os.path.basename(audio))
         self.player.play()
+        try:
+            import pygame as _pg
+            if _pg.mixer.get_init():
+                _pg.mixer.music.set_volume(self.vol.value() / 100.0)
+        except Exception:
+            pass
         self.b_play.setText("⏸")
 
     def toggle(self):
@@ -595,8 +625,29 @@ class MainWindow(QMainWindow):
         self.update_player(force=True)
         print(f"[Seek] {pos:.1f}s -> {new:.1f}s")
 
+    def _vol_changed(self, v):
+        # Keo thanh volume kieu YouTube
+        self._muted = (v == 0)
+        self.b_mute.setText("🔇" if self._muted else "🔊")
+        try:
+            import pygame as _pg
+            if _pg.mixer.get_init():
+                _pg.mixer.music.set_volume(v / 100.0)
+        except Exception:
+            pass
+
+    def toggle_mute(self):
+        if getattr(self, "_muted", False):
+            self.vol.setValue(getattr(self, "_vol_before_mute", 80) or 80)
+        else:
+            self._vol_before_mute = self.vol.value() or 80
+            self.vol.setValue(0)
+
+    def volume_step(self, delta):
+        self.vol.setValue(max(0, min(100, self.vol.value() + delta)))
+
     def keyPressEvent(self, event):
-        # Space: play/pause, <-/->: tua 5s, J/L: tua 10s nhu YouTube
+        # Space: play/pause, <-/->: tua 5s, J/L: tua 10s, Up/Down volume, M mute (YouTube)
         k = event.key()
         if k == Qt.Key_Space:
             self.toggle()
@@ -608,6 +659,12 @@ class MainWindow(QMainWindow):
             self.seek_relative(10)
         elif k == Qt.Key_J:
             self.seek_relative(-10)
+        elif k == Qt.Key_Up:
+            self.volume_step(5)
+        elif k == Qt.Key_Down:
+            self.volume_step(-5)
+        elif k == Qt.Key_M:
+            self.toggle_mute()
         else:
             super().keyPressEvent(event)
 
